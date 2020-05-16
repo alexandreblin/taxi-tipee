@@ -20,6 +20,8 @@ class TipeeBackend(BaseBackend):
         self.app_name = kwargs['username']
         self.app_private_key = kwargs['password']
         self.hostname = kwargs['hostname']
+        self.scheme = kwargs['options'].get('scheme', 'https')
+        self.port = int(kwargs.get('port', 80))
         self.person_id = int(kwargs['options']['person'])
 
     def api_token(self):
@@ -37,25 +39,32 @@ class TipeeBackend(BaseBackend):
         start_time = datetime.datetime.combine(date, entry.get_start_time())
         end_time = start_time + datetime.timedelta(seconds=seconds)
 
-        r = requests.post(f'https://{self.hostname}/{self.path}/timeclock/timechecks/bulk', json=[
+        r = requests.post(f'{self.scheme}://{self.hostname}:{self.port}/{self.path}/timeclock/timechecks/bulk', json=[
             {
                 'person': self.person_id,
                 'timeclock': f'taxi {taxi_version}, taxi-tipee {taxi_tipee_version}',
                 'time': start_time.strftime('%Y-%m-%d %H:%M:%S'),
                 'external_id': '',
+                'in': True
             },
             {
                 'person': self.person_id,
                 'timeclock': f'taxi {taxi_version}, taxi-tipee {taxi_tipee_version}',
                 'time': end_time.strftime('%Y-%m-%d %H:%M:%S'),
-                'external_id': '',
+                'external_id': ''
             }
         ], headers={
             'Authorization': self.api_token()
         })
 
+        if r.status_code == 500:
+            raise PushEntryFailed(r.json()['detail'])
+
         if r.status_code != 200:
             raise PushEntryFailed(r.json()['message'])
+        
+        if not all(e['success'] for e in r.json()):
+            raise PushEntryFailed(' // '.join(set(e['error'] for e in r.json() if 'error' in e)))
 
     def get_project_hash(self, project_name):
         result = 0
