@@ -24,7 +24,7 @@ class TipeeBackend(BaseBackend):
 
     def api_token(self):
         timestamp = time.time()
-        application_hash = self.app_private_key + str(timestamp)
+        application_hash = self.app_private_key + str(int(timestamp))
 
         return 'FORUM-TOKEN timestamp={} app={} hash={}'.format(
             int(timestamp),
