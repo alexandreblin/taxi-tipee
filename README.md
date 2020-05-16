@@ -18,7 +18,7 @@ In your `.taxirc` file, use the `tipee` protocol for your backend.
 
 ```ini
 [backends]
-my_tipee_backend = tipee://app_name:app_private_key@instance.tipee.net/api/?person=person_id
+my_tipee_backend = tipee://[app_name]:[app_private_key]@[instance].tipee.net/api/?person=[person_id]
 ```
 
 There is an extra `scheme=http` argument that can be useful when using a local instance (and you can use `localhost:port` too).
