@@ -21,7 +21,7 @@ class TipeeBackend(BaseBackend):
         self.app_private_key = kwargs['password']
         self.hostname = kwargs['hostname']
         self.scheme = kwargs['options'].get('scheme', 'https')
-        self.port = int(kwargs.get('port') or 443 if self.scheme == 'https' else 80)
+        self.port = int(kwargs.get('port') or (443 if self.scheme == 'https' else 80))
         self.person_id = int(kwargs['options']['person'])
 
     def api_token(self):
