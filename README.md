@@ -1,8 +1,8 @@
-Tipee backend for Taxi
-======================
+Gammadia's tipee backend for Taxi
+=================================
 
-This is the Tipee backend for [Taxi](https://github.com/sephii/taxi). It
-exposes the `tipee` protocol to push entries to Tipee.
+This is the [Taxi](https://github.com/sephii/taxi) backend for Gammadia's [tipee](https://tipee.ch). It
+exposes the `tipee` protocol to push entries as timechecks.
 
 Installation
 ------------
@@ -20,6 +20,8 @@ In your `.taxirc` file, use the `tipee` protocol for your backend.
 [backends]
 my_tipee_backend = tipee://app_name:app_private_key@instance.tipee.net/api/?person=person_id
 ```
+
+There is an extra `scheme=http` argument that can be useful when using a local instance (and you can use `localhost:port` too).
 
 To auto-generate taxi aliases, you can specify your JIRA projects as follow:
 
