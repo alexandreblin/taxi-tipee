@@ -29,7 +29,7 @@ There is an extra `scheme=http` argument that can be useful when using a local i
 To auto-generate taxi aliases, you can specify your JIRA projects as follow then run `taxi update`:
 
 ```ini
-[tempo_projects]
+[jira_projects]
 infra = 10000
 ops = 1000
 dev = 100
