@@ -35,6 +35,9 @@ class TipeeBackend(BaseBackend):
         )
 
     def push_entry(self, date, entry):
+        if not isinstance(entry.duration, tuple):
+            raise PushEntryFailed('This backend does not support durations as hours. Please use a time range.')
+
         seconds = int(entry.hours * 3600)
         start_time = datetime.datetime.combine(date, entry.get_start_time())
         end_time = start_time + datetime.timedelta(seconds=seconds)
