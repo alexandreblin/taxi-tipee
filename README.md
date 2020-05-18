@@ -11,8 +11,34 @@ Installation
 taxi plugin install tipee
 ```
 
-Known limitations
------------------
+Usage
+-----
+
+In your `.taxirc` file, use the `tipee` protocol for your backend.
+
+```ini
+[backends]
+my_tipee_backend = tipee://[app_name]:[app_private_key]@[instance].tipee.net/api/?person=[person_id]
+
+[taxi]
+regroup_entries = false
+```
+
+There is an extra `scheme=http` argument that can be useful when using a local instance (and you can use `localhost:port` too).
+
+To auto-generate taxi aliases, you can specify your JIRA projects as follow then run `taxi update`:
+
+```ini
+[tempo_projects]
+infra = 10000
+ops = 1000
+dev = 100
+```
+
+The numbers represent the range of JIRA tickets being statically aliased (DEV-1, DEV-2, DEV-3, ..., DEV-100). Whenever your JIRA project reaches a ticket above that range, taxi will display a warning `inexistent alias` and ignore your entry. To fix it, edit `.taxirc`, raise the number and run `taxi update`.
+
+Things you should know
+----------------------
 
 ### Duration as hours is not supported
 
@@ -22,25 +48,11 @@ As stated in [taxi's documentation](https://taxi-timesheets.readthedocs.io/en/ma
 
 However, tipee requires timechecks to have specific time start and end, so a proper error will be thrown if you do not provide a time range.
 
-Usage
------
+### Regrouping entries is not supported
 
-In your `.taxirc` file, use the `tipee` protocol for your backend.
+By default, [taxi](https://taxi-timesheets.readthedocs.io/en/master/userguide.html#regroup-entries) regroups entries to commit them. So if you have 3 different entries on a day with the same alias and description, it will push only one entry with the cumulated times. In tipee, this leads to timesheets overlapping each others, which are explicitly prohibited. So you need to set the option to `false` :
 
-```ini
-[backends]
-my_tipee_backend = tipee://[app_name]:[app_private_key]@[instance].tipee.net/api/?person=[person_id]
 ```
-
-There is an extra `scheme=http` argument that can be useful when using a local instance (and you can use `localhost:port` too).
-
-To auto-generate taxi aliases, you can specify your JIRA projects as follow:
-
-```ini
-[tempo_projects]
-infra = 10000
-ops = 1000
-dev = 100
+[taxi]
+regroup_entries = false
 ```
-
-The numbers represent the range of JIRA tickets being aliased (DEV-1, DEV-2, DEV-3, ..., DEV-100).
