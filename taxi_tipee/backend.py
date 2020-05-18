@@ -16,6 +16,9 @@ class TipeeBackend(BaseBackend):
         super(TipeeBackend, self).__init__(**kwargs)
         self.path = self.path.lstrip('/')
         self.settings = self.context['settings']
+        
+        if (self.settings['regroup_entries']):
+            raise ValueError('This backend does not support the "regroup_entries" being true. Please set it to false.')
 
         self.app_name = kwargs['username']
         self.app_private_key = kwargs['password']
