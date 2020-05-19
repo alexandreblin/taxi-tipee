@@ -14,6 +14,8 @@ import datetime
 class TipeeBackend(BaseBackend):
     def __init__(self, **kwargs):
         super(TipeeBackend, self).__init__(**kwargs)
+
+        self.name = 'tipee'
         self.path = self.path.lstrip('/')
         self.settings = self.context['settings']
         
@@ -123,22 +125,17 @@ class TipeeBackend(BaseBackend):
         if not all(e['success'] for e in r.json()):
             raise PushEntryFailed(' // '.join(set(e['error'] for e in r.json() if 'error' in e)))
 
-    def get_project_hash(self, project_name):
-        result = 0
-        for i, c in enumerate(project_name):
-            result += ord(c) * pow(10, i * 3)
-
-        return result
-
     def get_projects(self):
         projects_list = []
 
         for project_name, count in self.settings.config.items('jira_projects'):
             project_name = project_name.upper()
-            p = Project(self.get_project_hash(project_name), project_name, Project.STATUS_ACTIVE)
+            p = Project(project_name, '[JIRA] %s' % project_name, Project.STATUS_ACTIVE,
+                        description=('JIRA Project %s (created by backend %s)' % (project_name, self.name))
+            )
             for i in range(1, int(count) + 1):
                 name = f'{project_name}-{i}'
-                a = Activity(i, name, 0)
+                a = Activity(i, name)
                 p.add_activity(a)
                 p.aliases[name] = a.id
 
