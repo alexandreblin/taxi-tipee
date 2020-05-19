@@ -11,8 +11,8 @@ Installation
 taxi plugin install tipee
 ```
 
-Usage
------
+Configuration
+-------------
 
 In your `.taxirc` file, use the `tipee` protocol for your backend.
 
@@ -24,18 +24,39 @@ my_tipee_backend = tipee://[app_name]:[app_private_key]@[instance].tipee.net/api
 regroup_entries = false
 ```
 
-There is an extra `scheme=http` argument that can be useful when using a local instance (and you can use `localhost:port` too).
+* `[app_name]` and `[app_private_key]` can be found in tipee's PHP configuration files, like
+`$_CONFIG['PrivateKey']['timbreuse'] = 'fK19psLpm17u660fCiJ5s569bfeij2s800y';` for example, so here you would use 
+`timbreuse:fK19psLpm17u660fCiJ5s569bfeij2s800y`
+* `[instance]` is tipee's instance name
+* `[person_id]` is the ID of your
+user, which can be found in the URL when editing your profile, like `https://gammadia.tipee.net/person/#/169`
 
-To auto-generate taxi aliases, you can specify your JIRA projects as follow then run `taxi update`:
+> There is an extra `scheme=http` query string argument that can be useful when developing (using `localhost:port` as the hostname).
+
+To generate taxi aliases, specify your JIRA projects as follows and run `taxi update`:
 
 ```ini
 [jira_projects]
-infra = 10000
+dev = 10000
 ops = 1000
-dev = 100
+infra = 100
 ```
 
-The numbers represent the range of JIRA tickets being statically aliased (DEV-1, DEV-2, DEV-3, ..., DEV-100). Whenever your JIRA project reaches a ticket above that range, taxi will display a warning `inexistent alias` and ignore your entry. To fix it, edit `.taxirc`, raise the number and run `taxi update`.
+> The numbers represent the range of JIRA tickets that will be statically generated as taxi aliases (DEV-1, DEV-2, DEV-3, ..., DEV-100). Whenever your JIRA project reaches a ticket above that range, taxi will display a warning `inexistent alias` and ignore your entry. To fix it, edit `.taxirc`, raise the number and run `taxi update`.
+
+Usage
+-----
+
+You can now add timesheet entries like :
+
+```
+19/05/2020 # Tuesday
+INFRA-38      08:00-09:00    Monitoring server
+DEV-2087           -10:30    Fixing bug
+OPS-952            -?        Work in progress...
+```
+
+> You can use lowercase aliases too.
 
 Things you should know
 ----------------------
