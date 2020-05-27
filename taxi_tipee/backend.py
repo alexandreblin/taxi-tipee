@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from taxi.backends import BaseBackend, PushEntryFailed
+from taxi.backends import BaseBackend, PushEntryFailed, PushEntriesFailed
 from taxi.projects import Activity, Project
 
 from taxi import __version__ as taxi_version
@@ -27,6 +27,8 @@ class TipeeBackend(BaseBackend):
         self.port = int(kwargs.get('port') or (443 if self.scheme == 'https' else 80))
         self.person_id = int(kwargs['options']['person'])
 
+        self.entries = defaultdict(list)
+
     def api_token(self):
         timestamp = time.time()
         application_hash = self.app_private_key + str(int(timestamp))
@@ -41,22 +43,71 @@ class TipeeBackend(BaseBackend):
         if not isinstance(entry.duration, tuple):
             raise PushEntryFailed('This backend does not support durations as hours. Please use a time range.')
 
-        seconds = int(entry.hours * 3600)
-        start_time = datetime.datetime.combine(date, entry.get_start_time())
-        end_time = start_time + datetime.timedelta(seconds=seconds)
+        self.entries[date].append(entry)
+
+    def post_push_entries(self):
+        failed_entries=defaultdict(list)
+        entries_to_push=[]
+
+        for date, entries in self.entries.items():
+            entries_to_skip=[]
+
+            for index, entry in enumerate(entries):
+                if entry in entries_to_skip:
+                    continue
+
+                entries_to_push = []
+                entries_to_push.append(entry)
+
+                next_index = index + 1
+                entry_duration = int(entry.hours * 3600)
+                entry_start_time = datetime.datetime.combine(date, entry.get_start_time())
+
+                while True:
+                    entry_end_time = entry_start_time + datetime.timedelta(seconds=entry_duration)
+
+                    try:
+                        next_entry = entries[next_index]
+                        next_entry_duration = int(next_entry.hours * 3600)
+                        next_entry_start_time = datetime.datetime.combine(date, next_entry.get_start_time())
+                        delta = (next_entry_start_time - entry_end_time).seconds
+
+                        if delta > 0:
+                            break
+
+                        entries_to_skip.append(next_entry)
+                        entries_to_push.append(next_entry)
+
+                        entry = next_entry
+                        next_index += 1
+                        entry_duration += next_entry_duration
+                    except IndexError:
+                        break
+
+                try:
+                    self.do_push_entry(entry_start_time, entry_duration)
+                except PushEntryFailed as e:
+                    for failed_entry in entries_to_push:
+                        failed_entries[failed_entry] = str(e)
+
+        if len(failed_entries) > 0:
+            raise PushEntriesFailed(entries=failed_entries)
+
+    def do_push_entry(self, start, duration):
+        end = start + datetime.timedelta(seconds=duration)
 
         r = requests.post(f'{self.scheme}://{self.hostname}:{self.port}/{self.path}/timeclock/timechecks/bulk', json=[
             {
                 'person': self.person_id,
                 'timeclock': f'taxi {taxi_version}, taxi-tipee {taxi_tipee_version}',
-                'time': start_time.strftime('%Y-%m-%d %H:%M:%S'),
+                'time': start.strftime('%Y-%m-%d %H:%M:%S'),
                 'external_id': '',
                 'in': True
             },
             {
                 'person': self.person_id,
                 'timeclock': f'taxi {taxi_version}, taxi-tipee {taxi_tipee_version}',
-                'time': end_time.strftime('%Y-%m-%d %H:%M:%S'),
+                'time': end.strftime('%Y-%m-%d %H:%M:%S'),
                 'external_id': ''
             }
         ], headers={
@@ -68,7 +119,7 @@ class TipeeBackend(BaseBackend):
 
         if r.status_code != 200:
             raise PushEntryFailed(r.json()['message'])
-        
+
         if not all(e['success'] for e in r.json()):
             raise PushEntryFailed(' // '.join(set(e['error'] for e in r.json() if 'error' in e)))
 
