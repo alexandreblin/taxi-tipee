@@ -19,7 +19,7 @@ class TipeeBackend(BaseBackend):
         self.path = self.path.lstrip('/')
         self.settings = self.context['settings']
         
-        if (self.settings['regroup_entries']):
+        if self.settings['regroup_entries']:
             raise ValueError('This backend does not support the "regroup_entries" being true. Please set it to false.')
 
         self.app_name = kwargs['username']
@@ -49,7 +49,6 @@ class TipeeBackend(BaseBackend):
 
     def post_push_entries(self):
         failed_entries=defaultdict(list)
-        entries_to_push=[]
 
         for date, entries in self.entries.items():
             entries_to_skip=[]
@@ -58,8 +57,7 @@ class TipeeBackend(BaseBackend):
                 if entry in entries_to_skip:
                     continue
 
-                entries_to_push = []
-                entries_to_push.append(entry)
+                entries_to_push = [entry]
 
                 next_index = index + 1
                 entry_duration = int(entry.hours * 3600)
@@ -80,7 +78,6 @@ class TipeeBackend(BaseBackend):
                         entries_to_skip.append(next_entry)
                         entries_to_push.append(next_entry)
 
-                        entry = next_entry
                         next_index += 1
                         entry_duration += next_entry_duration
                     except IndexError:
@@ -130,8 +127,8 @@ class TipeeBackend(BaseBackend):
 
         for project_name, count in self.settings.config.items('jira_projects'):
             project_name = project_name.upper()
-            p = Project(project_name, '[JIRA] %s' % project_name, Project.STATUS_ACTIVE,
-                        description=('JIRA Project %s (created by backend %s)' % (project_name, self.name))
+            p = Project(project_name, f'[JIRA] {project_name}', Project.STATUS_ACTIVE,
+                        description=f'JIRA Project {project_name} (created by backend {self.name})'
             )
             for i in range(1, int(count) + 1):
                 name = f'{project_name}-{i}'
