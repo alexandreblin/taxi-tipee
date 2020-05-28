@@ -18,9 +18,9 @@ class TipeeBackend(BaseBackend):
         self.name = 'tipee'
         self.path = self.path.lstrip('/')
         self.settings = self.context['settings']
-        
+
         if self.settings['regroup_entries']:
-            raise ValueError('This backend does not support the "regroup_entries" being true. Please set it to false.')
+            raise ValueError('tipee cannot work alongside taxi\'s "regroup_entries" option. Please set it to false.')
 
         self.app_name = kwargs['username']
         self.app_private_key = kwargs['password']
@@ -43,7 +43,7 @@ class TipeeBackend(BaseBackend):
 
     def push_entry(self, date, entry):
         if not isinstance(entry.duration, tuple):
-            raise PushEntryFailed('This backend does not support durations as hours. Please use a time range.')
+            raise PushEntryFailed('tipee does not support durations as hours. Please use a time range instead.')
 
         self.entries[date].append(entry)
 
@@ -122,20 +122,12 @@ class TipeeBackend(BaseBackend):
         if not all(e['success'] for e in r.json()):
             raise PushEntryFailed(' // '.join(set(e['error'] for e in r.json() if 'error' in e)))
 
-    def get_projects(self):
-        projects_list = []
+    @staticmethod
+    def get_projects():
+        p = Project('tipee', 'tipee', Project.STATUS_ACTIVE, description='tipee')
 
-        for project_name, count in self.settings.config.items('jira_projects'):
-            project_name = project_name.upper()
-            p = Project(project_name, f'[JIRA] {project_name}', Project.STATUS_ACTIVE,
-                        description=f'JIRA Project {project_name} (created by backend {self.name})'
-            )
-            for i in range(1, int(count) + 1):
-                name = f'{project_name}-{i}'
-                a = Activity(i, name)
-                p.add_activity(a)
-                p.aliases[name] = a.id
+        a = Activity(0, 'no activity')
+        p.add_activity(a)
+        p.aliases['tipee'] = a.id
 
-            projects_list.append(p)
-
-        return projects_list
+        return [p]

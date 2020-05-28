@@ -33,17 +33,6 @@ user, which can be found in the URL when editing your profile, like `https://gam
 
 > There is an extra `scheme=http` query string argument that can be useful when developing (using `localhost:port` as the hostname).
 
-To generate taxi aliases, specify your JIRA projects as follows and run `taxi update`:
-
-```ini
-[jira_projects]
-dev = 10000
-ops = 1000
-infra = 100
-```
-
-> The numbers represent the range of JIRA tickets that will be statically generated as taxi aliases (DEV-1, DEV-2, DEV-3, ..., DEV-100). Whenever your JIRA project reaches a ticket above that range, taxi will display a warning `inexistent alias` and ignore your entry. To fix it, run `taxi config`, raise the number and run `taxi update`.
-
 Usage
 -----
 
@@ -51,12 +40,10 @@ You can now add timesheet entries like :
 
 ```
 19/05/2020 # Tuesday
-INFRA-38      08:00-09:00    Monitoring server
-DEV-2087           -10:30    Fixing bug
-OPS-952            -?        Work in progress...
+tipee    08:00-09:00    Monitoring server
+tipee         -10:30    Fixing bug
+tipee         -?        Work in progress...
 ```
-
-> You can use lowercase aliases too.
 
 Things you should know
 ----------------------
