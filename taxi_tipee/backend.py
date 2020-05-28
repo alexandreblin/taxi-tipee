@@ -16,9 +16,9 @@ class TipeeBackend(BaseBackend):
         super(TipeeBackend, self).__init__(**kwargs)
         self.path = self.path.lstrip('/')
         self.settings = self.context['settings']
-        
-        if (self.settings['regroup_entries']):
-            raise ValueError('This backend does not support the "regroup_entries" being true. Please set it to false.')
+
+        if self.settings['regroup_entries']:
+            raise ValueError('tipee cannot work alongside taxi\'s "regroup_entries" option. Please set it to false.')
 
         self.app_name = kwargs['username']
         self.app_private_key = kwargs['password']
@@ -41,13 +41,12 @@ class TipeeBackend(BaseBackend):
 
     def push_entry(self, date, entry):
         if not isinstance(entry.duration, tuple):
-            raise PushEntryFailed('This backend does not support durations as hours. Please use a time range.')
+            raise PushEntryFailed('tipee does not support durations as hours. Please use a time range instead.')
 
         self.entries[date].append(entry)
 
     def post_push_entries(self):
         failed_entries=defaultdict(list)
-        entries_to_push=[]
 
         for date, entries in self.entries.items():
             entries_to_skip=[]
@@ -56,8 +55,7 @@ class TipeeBackend(BaseBackend):
                 if entry in entries_to_skip:
                     continue
 
-                entries_to_push = []
-                entries_to_push.append(entry)
+                entries_to_push = [entry]
 
                 next_index = index + 1
                 entry_duration = int(entry.hours * 3600)
@@ -78,7 +76,6 @@ class TipeeBackend(BaseBackend):
                         entries_to_skip.append(next_entry)
                         entries_to_push.append(next_entry)
 
-                        entry = next_entry
                         next_index += 1
                         entry_duration += next_entry_duration
                     except IndexError:
@@ -123,25 +120,12 @@ class TipeeBackend(BaseBackend):
         if not all(e['success'] for e in r.json()):
             raise PushEntryFailed(' // '.join(set(e['error'] for e in r.json() if 'error' in e)))
 
-    def get_project_hash(self, project_name):
-        result = 0
-        for i, c in enumerate(project_name):
-            result += ord(c) * pow(10, i * 3)
+    @staticmethod
+    def get_projects():
+        p = Project('tipee', 'tipee', Project.STATUS_ACTIVE, description='tipee')
 
-        return result
+        a = Activity(0, 'no activity')
+        p.add_activity(a)
+        p.aliases['tipee'] = a.id
 
-    def get_projects(self):
-        projects_list = []
-
-        for project_name, count in self.settings.config.items('jira_projects'):
-            project_name = project_name.upper()
-            p = Project(self.get_project_hash(project_name), project_name, Project.STATUS_ACTIVE)
-            for i in range(1, int(count) + 1):
-                name = f'{project_name}-{i}'
-                a = Activity(i, name, 0)
-                p.add_activity(a)
-                p.aliases[name] = a.id
-
-            projects_list.append(p)
-
-        return projects_list
+        return [p]

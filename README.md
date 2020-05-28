@@ -26,16 +26,17 @@ regroup_entries = false
 
 There is an extra `scheme=http` argument that can be useful when using a local instance (and you can use `localhost:port` too).
 
-To auto-generate taxi aliases, you can specify your JIRA projects as follow then run `taxi update`:
+Usage
+-----
 
-```ini
-[jira_projects]
-infra = 10000
-ops = 1000
-dev = 100
+You can now add timesheet entries like :
+
 ```
-
-The numbers represent the range of JIRA tickets being statically aliased (DEV-1, DEV-2, DEV-3, ..., DEV-100). Whenever your JIRA project reaches a ticket above that range, taxi will display a warning `inexistent alias` and ignore your entry. To fix it, edit `.taxirc`, raise the number and run `taxi update`.
+19/05/2020 # Tuesday
+tipee    08:00-09:00    Monitoring server
+tipee         -10:30    Fixing bug
+tipee         -?        Work in progress...
+```
 
 Things you should know
 ----------------------
