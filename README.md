@@ -11,10 +11,10 @@ Installation
 taxi plugin install tipee
 ```
 
-Usage
------
+Configuration
+-------------
 
-In your `.taxirc` file, use the `tipee` protocol for your backend.
+Run `taxi config` and use the `tipee` protocol for your backend :
 
 ```ini
 [backends]
@@ -24,7 +24,14 @@ my_tipee_backend = tipee://[app_name]:[app_private_key]@[instance].tipee.net/api
 regroup_entries = false
 ```
 
-There is an extra `scheme=http` argument that can be useful when using a local instance (and you can use `localhost:port` too).
+* `[app_name]` and `[app_private_key]` can be found in tipee's PHP configuration files, like
+`$_CONFIG['PrivateKey']['timbreuse'] = 'fK19psLpm17u660fCiJ5s569bfeij2s800y';` for example, so here you would use 
+`timbreuse:fK19psLpm17u660fCiJ5s569bfeij2s800y`
+* `[instance]` is tipee's instance name
+* `[person_id]` is the ID of your
+user, which can be found in the URL when editing your profile, like `https://gammadia.tipee.net/person/#/169`
+
+> There is an extra `scheme=http` query string argument that can be useful when developing (using `localhost:port` as the hostname).
 
 Usage
 -----
