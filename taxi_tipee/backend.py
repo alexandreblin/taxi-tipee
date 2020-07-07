@@ -125,8 +125,7 @@ class TipeeBackend(BaseBackend):
         if not all(e['success'] for e in r.json()):
             raise PushEntryFailed(f"[{self.name}] {' // '.join(set(e['error'] for e in r.json() if 'error' in e))}")
 
-    @staticmethod
-    def get_projects():
+    def get_projects(self):
         p = Project(self.name, self.name, Project.STATUS_ACTIVE, description=self.name)
 
         a = Activity(0, "No activity")
