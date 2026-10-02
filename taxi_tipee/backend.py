@@ -51,7 +51,11 @@ class TipeeBackend(BaseBackend):
     def post_push_entries(self):
         failed_entries=defaultdict(list)
 
-        for date, entries in self.entries.items():
+        # Oldest first: tipee refuses to open a timecheck when a later one
+        # already exists within the next 24 hours, and taxi hands the entries
+        # over in file order, where the newest day usually comes first.
+        for date, entries in sorted(self.entries.items()):
+            entries = sorted(entries, key=lambda entry: entry.get_start_time())
             entries_to_skip=[]
 
             for index, entry in enumerate(entries):
