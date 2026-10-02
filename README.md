@@ -64,3 +64,16 @@ By default, [taxi](https://taxi-timesheets.readthedocs.io/en/master/userguide.ht
 [taxi]
 regroup_entries = false
 ```
+
+Releasing
+---------
+
+With [Nix](https://nixos.org) installed (the flake provides Python and the release tools):
+
+```shell
+./release.sh 1.0.10
+```
+
+It bumps the version, builds and checks the distributions, then commits, tags and pushes. The tag
+triggers the `release` GitHub Actions workflow, which publishes to PyPI as a
+[trusted publisher](https://docs.pypi.org/trusted-publishers/), so no API token is needed.

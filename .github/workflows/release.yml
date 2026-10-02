@@ -1,0 +1,29 @@
+# Publishes a release to PyPI when release.sh pushes its tag. PyPI trusts this
+# workflow (a "trusted publisher", configured on the project's Publishing
+# page with environment `pypi`), so no API token is stored anywhere.
+name: release
+
+on:
+  push:
+    tags: ["*"]
+
+jobs:
+  pypi:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - name: Check the tag matches the version
+        run: |
+          version=$(nix develop --command python -c 'import taxi_tipee; print(taxi_tipee.__version__)')
+          test "$version" = "$GITHUB_REF_NAME" || {
+            echo "Tag $GITHUB_REF_NAME, but taxi_tipee/__init__.py says $version." >&2
+            exit 1
+          }
+      - name: Build
+        run: nix develop --command sh -c 'python -m build --no-isolation && twine check dist/*'
+      - uses: pypa/gh-action-pypi-publish@release/v1

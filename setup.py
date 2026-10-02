@@ -12,6 +12,8 @@ setup(
     version=__version__,
     packages=find_packages(),
     description='Tipee backend for Taxi',
+    long_description=open('README.md', encoding='utf-8').read(),
+    long_description_content_type='text/markdown',
     author='Alexandre Blin',
     author_email='alexandre@blin.fr',
     url='https://github.com/alexandreblin/taxi-tipee',
