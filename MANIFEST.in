@@ -1,0 +1,4 @@
+# setuptools-scm puts every tracked file in the sdist; these are only for
+# developing and releasing.
+prune .github
+exclude .envrc .gitignore flake.nix flake.lock

@@ -1,7 +1,7 @@
-Gammadia's tipee backend for Taxi
-=================================
+tipee backend for Taxi
+======================
 
-This is the [Taxi](https://github.com/sephii/taxi) backend for Gammadia's [tipee](https://tipee.ch). It
+This is the [Taxi](https://github.com/sephii/taxi) backend for [tipee](https://tipee.ch). It
 exposes the `tipee` protocol to push entries as timechecks.
 
 Installation
@@ -29,7 +29,7 @@ regroup_entries = false
 `timbreuse:fK19psLpm17u660fCiJ5s569bfeij2s800y`
 * `[instance]` is tipee's instance name
 * `[person_id]` is the ID of your
-user, which can be found in the URL when editing your profile, like `https://gammadia.tipee.net/person/#/169`
+user, which can be found in the URL when editing your profile, like `https://[instance].tipee.net/person/#/169`
 
 > There is an extra `scheme=http` query string argument that can be useful when developing (using `localhost:port` as the hostname).
 
@@ -50,7 +50,7 @@ Things you should know
 
 ### Duration as hours is not supported
 
-As stated in [taxi's documentation](https://taxi-timesheets.readthedocs.io/en/master/userguide.html#timesheet-syntax) :
+As stated in [Taxi's documentation](https://taxi-timesheets.readthedocs.io/en/master/userguide.html#timesheet-syntax) :
 
 > duration can either be a time range or a duration in hours. If it’s a time range, it should be in the format start-end, where start can be left blank if the previous entry also used a time range and had a time defined, and end can be ? if the end time is not known yet, leading to the entry being ignored. Each part of the range should have the format HH:mm, or HHmm. If duration is a duration, it should just be a number, eg. 2 for 2 hours, or 1.75 for 1 hour and 45 minutes.
 
@@ -58,7 +58,7 @@ However, tipee requires timechecks to have specific time start and end, so a pro
 
 ### Regrouping entries is not supported
 
-By default, [taxi](https://taxi-timesheets.readthedocs.io/en/master/userguide.html#regroup-entries) regroups entries to commit them. So if you have 3 different entries on a day with the same alias and description, it will push only one entry with the cumulated times. In tipee, this leads to timesheets overlapping each others, which are explicitly prohibited. So you need to set the option to `false` :
+By default, [Taxi](https://taxi-timesheets.readthedocs.io/en/master/userguide.html#regroup-entries) regroups entries to commit them. So if you have 3 different entries on a day with the same alias and description, it will push only one entry with the cumulated times. In tipee, this leads to timesheets overlapping each others, which are explicitly prohibited. So you need to set the option to `false` :
 
 ```
 [taxi]
@@ -68,12 +68,16 @@ regroup_entries = false
 Releasing
 ---------
 
-With [Nix](https://nixos.org) installed (the flake provides Python and the release tools):
+Publish a [GitHub release](https://github.com/alexandreblin/taxi-tipee/releases/new) with a new tag
+named after the version (like `1.0.11`), from the web interface or with:
 
 ```shell
-./release.sh 1.0.10
+gh release create 1.0.11 --generate-notes
 ```
 
-It bumps the version, builds and checks the distributions, then commits, tags and pushes. The tag
-triggers the `release` GitHub Actions workflow, which publishes to PyPI as a
-[trusted publisher](https://docs.pypi.org/trusted-publishers/), so no API token is needed.
+The `release` GitHub Actions workflow builds the package (the version comes from the tag, through
+[setuptools-scm](https://setuptools-scm.readthedocs.io)), publishes it to PyPI as a
+[trusted publisher](https://docs.pypi.org/trusted-publishers/), so no API token is needed, and attaches
+the files to the release.
+
+To build locally, `nix develop` (or direnv) provides Python and the tools: `python -m build --no-isolation`.
