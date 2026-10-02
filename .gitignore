@@ -8,3 +8,5 @@
 /.tox
 /.cache
 /doc/_build/
+/.direnv
+/result
