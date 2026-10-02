@@ -21,7 +21,7 @@ class TipeeBackend(BaseBackend):
 
         if self.settings['regroup_entries']:
             raise ValueError(
-                f"[{self.name}] cannot work alongside taxi's `regroup_entries` option. Please set it to `false`."
+                f"[{self.name}] cannot work alongside Taxi's `regroup_entries` option. Please set it to `false`."
             )
 
         self.app_name = kwargs['username']
@@ -52,7 +52,7 @@ class TipeeBackend(BaseBackend):
         failed_entries=defaultdict(list)
 
         # Oldest first: tipee refuses to open a timecheck when a later one
-        # already exists within the next 24 hours, and taxi hands the entries
+        # already exists within the next 24 hours, and Taxi hands the entries
         # over in file order, where the newest day usually comes first.
         for date, entries in sorted(self.entries.items()):
             entries = sorted(entries, key=lambda entry: entry.get_start_time())
