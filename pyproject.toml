@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "taxi_tipee"
 # Taken from the git tag: publishing a GitHub release is what sets it.
 dynamic = ["version"]
-description = "Tipee backend for Taxi"
+description = "tipee backend for Taxi"
 readme = "README.md"
 authors = [{ name = "Alexandre Blin", email = "alexandre@blin.fr" }]
 license = "WTFPL"

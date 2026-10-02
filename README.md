@@ -1,7 +1,7 @@
-Gammadia's tipee backend for Taxi
-=================================
+tipee backend for Taxi
+======================
 
-This is the [Taxi](https://github.com/sephii/taxi) backend for Gammadia's [tipee](https://tipee.ch). It
+This is the [Taxi](https://github.com/sephii/taxi) backend for [tipee](https://tipee.ch). It
 exposes the `tipee` protocol to push entries as timechecks.
 
 Installation
@@ -29,7 +29,7 @@ regroup_entries = false
 `timbreuse:fK19psLpm17u660fCiJ5s569bfeij2s800y`
 * `[instance]` is tipee's instance name
 * `[person_id]` is the ID of your
-user, which can be found in the URL when editing your profile, like `https://gammadia.tipee.net/person/#/169`
+user, which can be found in the URL when editing your profile, like `https://[instance].tipee.net/person/#/169`
 
 > There is an extra `scheme=http` query string argument that can be useful when developing (using `localhost:port` as the hostname).
 
