@@ -21,14 +21,13 @@
             (pkgs.python3.withPackages (ps: [
               ps.build
               ps.setuptools
+              ps.setuptools-scm
               ps.wheel
               ps.taxi
               ps.requests
             ]))
             pkgs.twine
           ];
-          # release.sh re-executes itself through `nix develop` unless this is set.
-          TAXI_TIPEE_DEVSHELL = "1";
         };
       });
 

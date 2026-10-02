@@ -1,29 +1,36 @@
-# Publishes a release to PyPI when release.sh pushes its tag. PyPI trusts this
-# workflow (a "trusted publisher", configured on the project's Publishing
-# page with environment `pypi`), so no API token is stored anywhere.
+# Publishes to PyPI when a GitHub release is published. The release's tag is
+# the version (setuptools-scm reads it), so there is nothing to bump first.
+# PyPI trusts this workflow (a "trusted publisher", configured on the
+# project's Publishing page with environment `pypi`), so no API token is
+# stored anywhere.
 name: release
 
 on:
-  push:
-    tags: ["*"]
+  release:
+    types: [published]
 
 jobs:
   pypi:
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
-      contents: read
-      id-token: write
+      contents: write # to attach the distributions to the release
+      id-token: write # to publish as a trusted publisher
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # setuptools-scm needs the tags
       - uses: cachix/install-nix-action@v31
-      - name: Check the tag matches the version
-        run: |
-          version=$(nix develop --command python -c 'import taxi_tipee; print(taxi_tipee.__version__)')
-          test "$version" = "$GITHUB_REF_NAME" || {
-            echo "Tag $GITHUB_REF_NAME, but taxi_tipee/__init__.py says $version." >&2
-            exit 1
-          }
       - name: Build
         run: nix develop --command sh -c 'python -m build --no-isolation && twine check dist/*'
+      - name: Check the version is the tag
+        run: |
+          ls dist/taxi_tipee-"$GITHUB_REF_NAME".tar.gz || {
+            echo "Built $(ls dist), but the release tag is $GITHUB_REF_NAME." >&2
+            exit 1
+          }
       - uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Attach the distributions to the release
+        run: gh release upload "$GITHUB_REF_NAME" dist/*
+        env:
+          GH_TOKEN: ${{ github.token }}

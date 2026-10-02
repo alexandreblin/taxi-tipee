@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=77", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "taxi_tipee"
+# Taken from the git tag: publishing a GitHub release is what sets it.
+dynamic = ["version"]
+description = "Tipee backend for Taxi"
+readme = "README.md"
+authors = [{ name = "Alexandre Blin", email = "alexandre@blin.fr" }]
+license = "WTFPL"
+requires-python = ">=3.8"
+dependencies = ["taxi>=6.0", "requests>=2.3.0"]
+classifiers = ["Programming Language :: Python :: 3"]
+
+[project.urls]
+Homepage = "https://github.com/alexandreblin/taxi-tipee"
+
+[project.entry-points."taxi.backends"]
+tipee = "taxi_tipee.backend:TipeeBackend"
+
+[tool.setuptools.packages.find]
+include = ["taxi_tipee*"]
+
+[tool.setuptools_scm]

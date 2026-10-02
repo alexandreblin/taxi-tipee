@@ -68,12 +68,16 @@ regroup_entries = false
 Releasing
 ---------
 
-With [Nix](https://nixos.org) installed (the flake provides Python and the release tools):
+Publish a [GitHub release](https://github.com/alexandreblin/taxi-tipee/releases/new) with a new tag
+named after the version (like `1.0.11`), from the web interface or with:
 
 ```shell
-./release.sh 1.0.10
+gh release create 1.0.11 --generate-notes
 ```
 
-It bumps the version, builds and checks the distributions, then commits, tags and pushes. The tag
-triggers the `release` GitHub Actions workflow, which publishes to PyPI as a
-[trusted publisher](https://docs.pypi.org/trusted-publishers/), so no API token is needed.
+The `release` GitHub Actions workflow builds the package (the version comes from the tag, through
+[setuptools-scm](https://setuptools-scm.readthedocs.io)), publishes it to PyPI as a
+[trusted publisher](https://docs.pypi.org/trusted-publishers/), so no API token is needed, and attaches
+the files to the release.
+
+To build locally, `nix develop` (or direnv) provides Python and the tools: `python -m build --no-isolation`.
