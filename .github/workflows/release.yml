@@ -1,21 +1,21 @@
-# Publishes to PyPI when a GitHub release is published. The release's tag is
-# the version (setuptools-scm reads it), so there is nothing to bump first.
-# PyPI trusts this workflow (a "trusted publisher", configured on the
-# project's Publishing page with environment `pypi`), so no API token is
-# stored anywhere.
+# Builds the package on every pull request, and publishes it to PyPI when a
+# GitHub release is published. The release's tag is the version
+# (setuptools-scm reads it), so there is nothing to bump first. PyPI trusts
+# this workflow (a "trusted publisher", configured on the project's
+# Publishing page with environment `pypi`), so no API token is stored
+# anywhere.
 name: release
 
 on:
+  pull_request:
   release:
     types: [published]
 
 jobs:
-  pypi:
+  build:
     runs-on: ubuntu-latest
-    environment: pypi
     permissions:
-      contents: write # to attach the distributions to the release
-      id-token: write # to publish as a trusted publisher
+      contents: read
     steps:
       - uses: actions/checkout@v5
         with:
@@ -24,13 +24,32 @@ jobs:
       - name: Build
         run: nix develop --command sh -c 'python -m build --no-isolation && twine check dist/*'
       - name: Check the version is the tag
+        if: github.event_name == 'release'
         run: |
           ls dist/taxi_tipee-"$GITHUB_REF_NAME".tar.gz || {
             echo "Built $(ls dist), but the release tag is $GITHUB_REF_NAME." >&2
             exit 1
           }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    if: github.event_name == 'release'
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: write # to attach the distributions to the release
+      id-token: write # to publish as a trusted publisher
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
       - name: Attach the distributions to the release
-        run: gh release upload "$GITHUB_REF_NAME" dist/*
+        run: gh release upload "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY"
         env:
           GH_TOKEN: ${{ github.token }}
