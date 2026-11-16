@@ -5,6 +5,7 @@ from taxi.projects import Activity, Project
 
 from taxi import __version__ as taxi_version
 from . import __version__ as taxi_tipee_version
+from . import midnight
 
 import requests
 import time
@@ -14,6 +15,10 @@ import datetime
 class TipeeBackend(BaseBackend):
     def __init__(self, **kwargs):
         super(TipeeBackend, self).__init__(**kwargs)
+
+        # Before Taxi reads the timesheet, which it does after loading the
+        # backends.
+        midnight.install()
 
         self.name = 'tipee'
         self.path = self.path.lstrip('/')

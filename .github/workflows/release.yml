@@ -1,5 +1,5 @@
-# Builds the package on every pull request, and publishes it to PyPI when a
-# GitHub release is published. The release's tag is the version
+# Tests and builds the package on every pull request, and publishes it to
+# PyPI when a GitHub release is published. The release's tag is the version
 # (setuptools-scm reads it), so there is nothing to bump first. PyPI trusts
 # this workflow (a "trusted publisher", configured on the project's
 # Publishing page with environment `pypi`), so no API token is stored
@@ -21,6 +21,8 @@ jobs:
         with:
           fetch-depth: 0 # setuptools-scm needs the tags
       - uses: cachix/install-nix-action@v31
+      - name: Test
+        run: nix develop --command python -m unittest discover -s tests -v
       - name: Build
         run: nix develop --command sh -c 'python -m build --no-isolation && twine check dist/*'
       - name: Check the version is the tag
