@@ -75,12 +75,41 @@ class EntriesPastMidnightTest(unittest.TestCase):
         entries[datetime.date(2026, 11, 14)][0].pushed = True
         self.assertEqual(entries.to_lines(), ["14/11/2026", "= tipee 22:15-24:00 late"])
 
-    def test_no_entry_can_follow_one_past_midnight_on_the_same_day(self):
-        for body in ("tipee 22:15-01:15 late\ntipee -02:00 later",
-                     "tipee 22:15-24:00 late\ntipee 00:00-01:00 later"):
+    def test_the_day_goes_on_past_midnight(self):
+        body = "tipee 20:00-22:15 evening\ntipee -00:15 late\ntipee 00:30-01:00 later\ntipee -01:30 last"
+        self.assertEqual(self.hours(body), [2.25, 2.0, 0.5, 0.5])
+        self.assertEqual(self.push(body), [('2026-11-14 20:00:00', '2026-11-15 00:15:00'),
+                                           ('2026-11-15 00:30:00', '2026-11-15 01:30:00')])
+
+    def test_entries_after_midnight_merge_with_the_one_ending_at_midnight(self):
+        body = "tipee 22:15-24:00 late\ntipee 00:00-01:00 later"
+        self.assertEqual(self.push(body), [('2026-11-14 22:15:00', '2026-11-15 01:00:00')])
+
+    def test_entries_after_midnight_are_pushed_in_order(self):
+        # The day's entries are sorted before pushing: by time of day alone,
+        # 00:30 would come first.
+        body = "tipee 21:00-22:00 b\ntipee 20:00-20:30 a\ntipee 22:30-00:15 c\ntipee 00:30-01:00 d"
+        self.assertEqual(self.push(body), [('2026-11-14 20:00:00', '2026-11-14 20:30:00'),
+                                           ('2026-11-14 21:00:00', '2026-11-14 22:00:00'),
+                                           ('2026-11-14 22:30:00', '2026-11-15 00:15:00'),
+                                           ('2026-11-15 00:30:00', '2026-11-15 01:00:00')])
+
+    def test_a_day_goes_past_midnight_only_once(self):
+        for body in ("tipee 22:15-01:15 late\ntipee 01:30-01:00 again",
+                     "tipee 22:15-24:00 late\ntipee 00:00-01:00 later\ntipee 23:00-00:30 again"):
             with self.subTest(body=body):
-                with self.assertRaisesRegex(EntriesCollectionValidationError, "last one of its day"):
+                with self.assertRaisesRegex(EntriesCollectionValidationError, "only once"):
                     self.parse(body)
+
+    def test_entries_after_midnight_lie_between_its_end_and_noon(self):
+        for body in ("tipee 22:00-00:15 late\ntipee 23:00-23:30 earlier",
+                     "tipee 22:00-00:15 late\ntipee 00:00-00:30 overlapping",
+                     "tipee 22:00-00:15 late\ntipee 20:00-21:00 evening, written below",
+                     "tipee 22:00-00:15 late\ntipee 11:00-12:30 past noon"):
+            with self.subTest(body=body):
+                with self.assertRaisesRegex(EntriesCollectionValidationError, "between 00:15 and 12:00"):
+                    self.parse(body)
+        self.assertEqual(self.hours("tipee 22:00-00:15 late\ntipee 11:00-12:00 noon"), [2.25, 1.0])
 
     def test_an_entry_past_midnight_lasts_less_than_12_hours(self):
         self.assertEqual(self.hours("tipee 20:00-07:59 night"), [11.983333333333333])
