@@ -65,6 +65,32 @@ By default, [Taxi](https://taxi-timesheets.readthedocs.io/en/master/userguide.ht
 regroup_entries = false
 ```
 
+### Entries can end past midnight
+
+Taxi itself refuses an entry that does not end after it starts, and cannot read `24:00`. With this
+backend installed, the last entry of a day may end at or past midnight:
+
+```
+14/11/2026 # Saturday
+tipee    20:00-22:15    Release
+tipee         -01:15    Checking the release
+```
+
+`22:15-24:00` and `22:15-00:00` both end at midnight. The entry is pushed as a single timecheck, closing
+the next day, and tipee counts each day's share of it. Two rules catch mistakes: such an entry must be the
+last one of its day (put the entries after midnight under the next day), and it must last less than 12
+hours, so that a typo like `13:00-12:00` is still refused.
+
+This works by adjusting how Taxi reads timesheets, which is written for Taxi 6: on another major version,
+Taxi keeps refusing these entries.
+
+Testing
+-------
+
+```shell
+nix develop --command python -m unittest discover -s tests
+```
+
 Releasing
 ---------
 
