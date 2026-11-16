@@ -60,7 +60,7 @@ class TipeeBackend(BaseBackend):
         # already exists within the next 24 hours, and Taxi hands the entries
         # over in file order, where the newest day usually comes first.
         for date, entries in sorted(self.entries.items()):
-            entries = sorted(entries, key=lambda entry: entry.get_start_time())
+            entries = sorted(entries, key=lambda entry: self._start(date, entry))
             entries_to_skip=[]
 
             for index, entry in enumerate(entries):
@@ -71,7 +71,7 @@ class TipeeBackend(BaseBackend):
 
                 next_index = index + 1
                 entry_duration = int(entry.hours * 3600)
-                entry_start_time = datetime.datetime.combine(date, entry.get_start_time())
+                entry_start_time = self._start(date, entry)
 
                 while True:
                     entry_end_time = entry_start_time + datetime.timedelta(seconds=entry_duration)
@@ -79,7 +79,7 @@ class TipeeBackend(BaseBackend):
                     try:
                         next_entry = entries[next_index]
                         next_entry_duration = int(next_entry.hours * 3600)
-                        next_entry_start_time = datetime.datetime.combine(date, next_entry.get_start_time())
+                        next_entry_start_time = self._start(date, next_entry)
                         delta = (next_entry_start_time - entry_end_time).seconds
 
                         if delta > 0:
@@ -101,6 +101,16 @@ class TipeeBackend(BaseBackend):
 
         if len(failed_entries) > 0:
             raise PushEntriesFailed(entries=failed_entries)
+
+    @staticmethod
+    def _start(date, entry):
+        """
+        When the entry starts: on its day, or the next one when an earlier
+        entry of its day went past midnight.
+        """
+        start = datetime.datetime.combine(date, entry.get_start_time())
+
+        return start + datetime.timedelta(days=1) if midnight.after_midnight(entry) else start
 
     def _push_entry(self, start, duration):
         end = start + datetime.timedelta(seconds=duration)

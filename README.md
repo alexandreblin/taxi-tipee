@@ -68,18 +68,25 @@ regroup_entries = false
 ### Entries can end past midnight
 
 Taxi itself refuses an entry that does not end after it starts, and cannot read `24:00`. With this
-backend installed, the last entry of a day may end at or past midnight:
+backend installed, an entry may end at or past midnight, and the day may go on after it: a work day
+ends when you stop working, not at midnight.
 
 ```
 14/11/2026 # Saturday
 tipee    20:00-22:15    Release
-tipee         -01:15    Checking the release
+tipee         -00:15    Checking the release
+tipee    00:30-01:00    Hotfix
 ```
 
-`22:15-24:00` and `22:15-00:00` both end at midnight. The entry is pushed as a single timecheck, closing
-the next day, and tipee counts each day's share of it. Two rules catch mistakes: such an entry must be the
-last one of its day (put the entries after midnight under the next day), and it must last less than 12
-hours, so that a typo like `13:00-12:00` is still refused.
+`22:15-24:00` and `22:15-00:00` both end at midnight. The entry is pushed as a timecheck closing the
+next day, the entries after it are pushed on the next day, and tipee counts each day's share. A few
+rules catch mistakes:
+
+* the entry going past midnight must last less than 12 hours, so that a typo like `13:00-12:00` is
+  still refused;
+* a day goes past midnight only once;
+* the entries after it must lie between its end and noon, so that an evening entry written below it by
+  mistake is refused rather than pushed a day late.
 
 This works by adjusting how Taxi reads timesheets, which is written for Taxi 6: on another major version,
 Taxi keeps refusing these entries.
