@@ -49,11 +49,14 @@ class TipeeBackend(BaseBackend):
                 f"[{self.name}] cannot work alongside Taxi's `regroup_entries` option. Please set it to `false`."
             )
 
-        if 'person' in options:
+        # The 1.x URL held an app name and its key (`tipee://<app>:<key>@…`),
+        # where a token now stands alone.
+        if kwargs['username'] and kwargs['password']:
             raise ValueError(
-                f"[{self.name}] the backend URL is in the old format (an app key and `?person=`), which tipee's"
-                " API no longer takes. Create an API token and use `tipee://<token>@<instance>.tipee.net/api/`"
-                " instead: see https://github.com/alexandreblin/taxi-tipee#configuration."
+                f"[{self.name}] the backend URL is in the old format (an app name and key), which tipee's"
+                " API no longer takes. Create an API token and use"
+                " `tipee://<token>@<instance>.tipee.net/api/?resource=<your user id>` instead: see"
+                " https://github.com/alexandreblin/taxi-tipee#configuration."
             )
 
         # `tipee://<token>@…`, or `tipee://:<token>@…` for those who prefer it
@@ -62,6 +65,16 @@ class TipeeBackend(BaseBackend):
         if not self.token:
             raise ValueError(
                 f"[{self.name}] the backend URL has no API token: use `tipee://<token>@<instance>.tipee.net/api/`."
+            )
+
+        # Whose timechecks to propose. tipee's API has no public endpoint
+        # telling who a token belongs to: `instance/metadata.show` does, but
+        # integration tokens may not call it.
+        self.resource_id = options.get('resource', '')
+        if not self.resource_id.isdigit():
+            raise ValueError(
+                f"[{self.name}] the backend URL needs your tipee user id: add `?resource=<your user id>`"
+                " (see https://github.com/alexandreblin/taxi-tipee#set-up-the-backend)."
             )
 
         self.hostname = kwargs['hostname']
@@ -78,7 +91,6 @@ class TipeeBackend(BaseBackend):
             raise ValueError(f"[{self.name}] `merge` is either `true` or `false`, not `{merge}`.")
         self.merge = merge == 'true'
 
-        self.resource_id = None
         self.entries = defaultdict(list)
 
     def push_entry(self, date, entry):
@@ -92,14 +104,6 @@ class TipeeBackend(BaseBackend):
     def post_push_entries(self):
         if not self.entries:
             return
-
-        try:
-            self.resource_id = self._resource_id()
-        except PushEntryFailed as e:
-            # Nothing can be pushed: say why once, against every entry.
-            raise PushEntriesFailed(entries={
-                entry: str(e) for entries in self.entries.values() for entry in entries
-            })
 
         failed_entries = {}
 
@@ -122,24 +126,6 @@ class TipeeBackend(BaseBackend):
         start = datetime.datetime.combine(date, entry.get_start_time())
 
         return start + datetime.timedelta(days=1) if midnight.after_midnight(entry) else start
-
-    def _resource_id(self):
-        """
-        Who the token belongs to, after checking they may propose their own
-        timechecks: either right lets them.
-        """
-        user = (self._call('instance/metadata.show', {}) or {}).get('user') or {}
-
-        if not user.get('user_id'):
-            raise PushEntryFailed(f"[{self.name}] tipee did not say who the API token belongs to.")
-
-        if user.get('perm_timecheck_suggest') is False and user.get('perm_timecheck_validateown') is False:
-            raise PushEntryFailed(
-                f"[{self.name}] your tipee account may not propose timechecks (it needs the right to suggest"
-                " them or to validate your own): ask your tipee administrator."
-            )
-
-        return user['user_id']
 
     def _timechecks(self):
         """

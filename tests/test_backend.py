@@ -66,8 +66,7 @@ class PushTest(unittest.TestCase):
         tipee, _ = self.push("tipee 08:00-09:00 a")
 
         urls = [url for url, _, _ in tipee.calls]
-        self.assertEqual(urls, ['https://tipee.example:443/api/instance/metadata.show',
-                                'https://tipee.example:443/api/timeclock/timechecks.propose'])
+        self.assertEqual(urls, ['https://tipee.example:443/api/timeclock/timechecks.propose'])
         for _, _, headers in tipee.calls:
             self.assertEqual(headers['Authorization'], 'Bearer tipee-0123abcd-0123abcd-0123abcd-0123abcd')
             self.assertEqual(headers['Tipee-Version'], '26.06.25')
@@ -84,7 +83,7 @@ class PushTest(unittest.TestCase):
         backend.port = 8080
         tipee, _ = self.push("tipee 08:00-09:00 a", backend=backend)
 
-        self.assertEqual(tipee.calls[0][0], 'http://tipee.example:8080/api/instance/metadata.show')
+        self.assertEqual(tipee.calls[0][0], 'http://tipee.example:8080/api/timeclock/timechecks.propose')
 
     def test_the_description_is_sent_only_when_asked(self):
         tipee, _ = self.push("tipee 08:00-09:00 Fixing bug")
@@ -123,22 +122,6 @@ class PushTest(unittest.TestCase):
 
         self.assertEqual(len(tipee.proposals), 1)
         self.assertEqual(failures, {'not yet': '[tipee] ends in the future: tipee only takes an entry once it is over.'})
-
-    def test_no_right_to_propose_fails_every_entry_without_sending_any(self):
-        tipee = FakeTipee(user={'user_id': USER_ID, 'perm_timecheck_suggest': False,
-                                'perm_timecheck_validateown': False})
-        tipee, failures = self.push("tipee 08:00-09:00 a\ntipee -10:00 b", tipee=tipee)
-
-        self.assertEqual(tipee.proposals, [])
-        self.assertEqual(set(failures), {'a', 'b'})
-        self.assertIn('may not propose timechecks', failures['a'])
-
-    def test_either_right_is_enough(self):
-        tipee = FakeTipee(user={'user_id': USER_ID, 'perm_timecheck_suggest': False,
-                                'perm_timecheck_validateown': True})
-        _, failures = self.push("tipee 08:00-09:00 a", tipee=tipee)
-
-        self.assertEqual(failures, {})
 
     def test_a_refused_token_says_so(self):
         tipee = FakeTipee()
@@ -191,6 +174,15 @@ class ConfigurationTest(unittest.TestCase):
     def test_the_old_url_format_is_explained(self):
         with self.assertRaisesRegex(ValueError, 'old format'):
             make_backend({'person': '169'}, token='key', username='timbreuse')
+
+    def test_the_resource_is_whose_timechecks_are_proposed(self):
+        self.assertEqual(make_backend({'resource': '42'}).resource_id, '42')
+
+    def test_the_resource_is_required(self):
+        for options in ({'resource': ''}, {'resource': 'me'}):
+            with self.subTest(options=options):
+                with self.assertRaisesRegex(ValueError, r'\?resource=<your user id>'):
+                    make_backend(options)
 
     def test_a_token_is_required(self):
         with self.assertRaisesRegex(ValueError, 'no API token'):
