@@ -2,7 +2,8 @@ tipee backend for Taxi
 ======================
 
 This is the [Taxi](https://github.com/sephii/taxi) backend for [tipee](https://tipee.ch). It
-exposes the `tipee` protocol to push entries as timechecks.
+exposes the `tipee` protocol to push entries as timecheck proposals, through
+[tipee's API](https://api.tipee.ch/guides-and-resources/first-steps).
 
 Installation
 ------------
@@ -14,24 +15,52 @@ taxi plugin install tipee
 Configuration
 -------------
 
-Run `taxi config` and use the `tipee` protocol for your backend :
+### Create an API token
+
+The backend authenticates with a personal API token, which carries your own permissions. There is no
+screen for it in tipee yet: log into your instance, open the browser's developer tools, and run this in
+the console:
+
+```js
+fetch('/api/security/tokens.create', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ name: 'taxi' }),
+}).then(r => r.json()).then(console.log)
+```
+
+It answers `{ id, token }`; the token looks like `tipee-0123abcd-…`. It expires after 90 days without
+use (each push counts as one). Keep the `id`: `/api/security/tokens.revoke` with `{ "id": … }` revokes
+the token the same way, and `/api/security/tokens.list` with `{ "resource": … }` (your user id) lists
+yours.
+
+### Set up the backend
+
+Run `taxi config` and use the `tipee` protocol for your backend:
 
 ```ini
 [backends]
-my_tipee_backend = tipee://[app_name]:[app_private_key]@[instance].tipee.net/api/?person=[person_id]
+my_tipee_backend = tipee://[token]@[instance].tipee.net/api/
 
 [taxi]
 regroup_entries = false
 ```
 
-* `[app_name]` and `[app_private_key]` can be found in tipee's PHP configuration files, like
-`$_CONFIG['PrivateKey']['timbreuse'] = 'fK19psLpm17u660fCiJ5s569bfeij2s800y';` for example, so here you would use 
-`timbreuse:fK19psLpm17u660fCiJ5s569bfeij2s800y`
+* `[token]` is the API token created above
 * `[instance]` is tipee's instance name
-* `[person_id]` is the ID of your
-user, which can be found in the URL when editing your profile, like `https://[instance].tipee.net/person/#/169`
 
-> There is an extra `scheme=http` query string argument that can be useful when developing (using `localhost:port` as the hostname).
+Options, as query string arguments:
+
+* `remark=description` sends each entry's description as the proposal's remark (cut at 255 characters),
+  so that it shows in tipee. Off by default: tipee gets the times and nothing else.
+* `scheme=http` can be useful when developing (using `localhost:port` as the hostname).
+
+The backend finds out who you are from the token, so the `?person=` of earlier versions is gone. Your
+account needs the right to suggest timechecks, or to validate your own.
+
+> Upgrading from 1.x: the `[app_name]:[app_private_key]` URL with `?person=` went to tipee's legacy
+> timeclock API, which needed a key from tipee's server configuration and created timechecks you
+> could not edit. Create a token and replace the URL as above.
 
 Usage
 -----
@@ -48,13 +77,22 @@ tipee         -?        Work in progress...
 Things you should know
 ----------------------
 
+### Entries become proposals
+
+Each entry is pushed as its own timecheck proposal, which you can still edit or delete in tipee as long
+as it is not validated. Depending on your rights, someone may have to validate it.
+
+tipee refuses a proposal that overlaps an existing timecheck, so pushing the same hours twice fails
+rather than counting them twice. It also refuses one that ends in the future: push an entry once it is
+over.
+
 ### Duration as hours is not supported
 
 As stated in [Taxi's documentation](https://taxi-timesheets.readthedocs.io/en/master/userguide.html#timesheet-syntax) :
 
 > duration can either be a time range or a duration in hours. If it’s a time range, it should be in the format start-end, where start can be left blank if the previous entry also used a time range and had a time defined, and end can be ? if the end time is not known yet, leading to the entry being ignored. Each part of the range should have the format HH:mm, or HHmm. If duration is a duration, it should just be a number, eg. 2 for 2 hours, or 1.75 for 1 hour and 45 minutes.
 
-However, tipee requires timechecks to have specific time start and end, so a proper error will be thrown if you do not provide a time range.
+However, tipee requires timechecks to have a specific start and end time, so a proper error will be thrown if you do not provide a time range.
 
 ### Regrouping entries is not supported
 
@@ -78,7 +116,7 @@ tipee         -00:15    Checking the release
 tipee    00:30-01:00    Hotfix
 ```
 
-`22:15-24:00` and `22:15-00:00` both end at midnight. The entry is pushed as a timecheck closing the
+`22:15-24:00` and `22:15-00:00` both end at midnight. The entry is pushed as a timecheck ending on the
 next day, the entries after it are pushed on the next day, and tipee counts each day's share. A few
 rules catch mistakes:
 
