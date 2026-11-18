@@ -17,7 +17,7 @@ def make_backend(url_options=None, token='tipee-0123abcd-0123abcd-0123abcd-0123a
         hostname='tipee.example',
         port=None,
         path='/api/',
-        options={'person': USER_ID, **(url_options or {})},
+        options={'resource': USER_ID, **(url_options or {})},
         context={'settings': {'regroup_entries': False}},
     )
 

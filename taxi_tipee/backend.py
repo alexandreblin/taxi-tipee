@@ -55,7 +55,7 @@ class TipeeBackend(BaseBackend):
             raise ValueError(
                 f"[{self.name}] the backend URL is in the old format (an app name and key), which tipee's"
                 " API no longer takes. Create an API token and use"
-                " `tipee://<token>@<instance>.tipee.net/api/?person=<your user id>` instead: see"
+                " `tipee://<token>@<instance>.tipee.net/api/?resource=<your user id>` instead: see"
                 " https://github.com/alexandreblin/taxi-tipee#configuration."
             )
 
@@ -70,10 +70,10 @@ class TipeeBackend(BaseBackend):
         # Whose timechecks to propose. tipee's API has no public endpoint
         # telling who a token belongs to: `instance/metadata.show` does, but
         # integration tokens may not call it.
-        self.resource_id = options.get('person', '')
+        self.resource_id = options.get('resource', '')
         if not self.resource_id.isdigit():
             raise ValueError(
-                f"[{self.name}] the backend URL needs your tipee user id: add `?person=<your user id>`"
+                f"[{self.name}] the backend URL needs your tipee user id: add `?resource=<your user id>`"
                 " (see https://github.com/alexandreblin/taxi-tipee#set-up-the-backend)."
             )
 

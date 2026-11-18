@@ -175,13 +175,13 @@ class ConfigurationTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'old format'):
             make_backend({'person': '169'}, token='key', username='timbreuse')
 
-    def test_the_person_is_whose_timechecks_are_proposed(self):
-        self.assertEqual(make_backend({'person': '42'}).resource_id, '42')
+    def test_the_resource_is_whose_timechecks_are_proposed(self):
+        self.assertEqual(make_backend({'resource': '42'}).resource_id, '42')
 
-    def test_the_person_is_required(self):
-        for options in ({'person': ''}, {'person': 'me'}):
+    def test_the_resource_is_required(self):
+        for options in ({'resource': ''}, {'resource': 'me'}):
             with self.subTest(options=options):
-                with self.assertRaisesRegex(ValueError, r'\?person=<your user id>'):
+                with self.assertRaisesRegex(ValueError, r'\?resource=<your user id>'):
                     make_backend(options)
 
     def test_a_token_is_required(self):

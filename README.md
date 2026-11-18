@@ -40,7 +40,7 @@ Run `taxi config` and use the `tipee` protocol for your backend:
 
 ```ini
 [backends]
-my_tipee_backend = tipee://[token]@[instance].tipee.net/api/?person=[user_id]
+my_tipee_backend = tipee://[token]@[instance].tipee.net/api/?resource=[user_id]
 
 [taxi]
 regroup_entries = false
@@ -66,7 +66,7 @@ each proposal and says so.
 
 > Upgrading from 1.x: the `[app_name]:[app_private_key]` URL with `?person=` went to tipee's legacy
 > timeclock API, which needed a key from tipee's server configuration and created timechecks you
-> could not edit. Create a token and replace the URL as above, keeping `?person=`.
+> could not edit. Create a token and replace the URL as above: `?person=` is now `?resource=`.
 
 Usage
 -----
