@@ -110,6 +110,41 @@ class EntriesPastMidnightTest(unittest.TestCase):
                 with self.assertRaises(ParseError):
                     self.parse(f"tipee 22:15-{end} late")
 
+    def test_a_line_starting_before_the_one_above_ends_starts_the_night(self):
+        body = "tipee 09:30-17:35 day\ntipee 01:10-01:40 night"
+        self.assertEqual(self.hours(body), [8.083333333333334, 0.5])
+        self.assertEqual(self.push(body), [('2026-11-14T09:30:00', '2026-11-14T17:35:00'),
+                                           ('2026-11-15T01:10:00', '2026-11-15T01:40:00')])
+
+    def test_the_night_goes_on_after_the_line_that_starts_it(self):
+        body = "tipee 19:30-20:30 evening\ntipee 00:15-00:50 night\ntipee -01:30 later\ntipee 02:00-02:30 last"
+        self.assertEqual(self.push(body), [('2026-11-14T19:30:00', '2026-11-14T20:30:00'),
+                                           ('2026-11-15T00:15:00', '2026-11-15T01:30:00'),
+                                           ('2026-11-15T02:00:00', '2026-11-15T02:30:00')])
+
+    def test_a_line_written_out_of_order_during_the_day_stays_on_its_day(self):
+        for body in ("tipee 13:00-18:00 afternoon\ntipee 09:00-09:15 Daily",
+                     "tipee 07:00-08:00 morning\ntipee 06:00-06:30 earlier"):
+            with self.subTest(body=body):
+                self.assertEqual([start[:10] for start, _ in self.push(body)],
+                                 ['2026-11-14', '2026-11-14'])
+
+    def test_the_night_ends_before_the_day_started_and_by_noon(self):
+        for body, bound in (("tipee 04:00-09:00 early\ntipee 03:00-04:30 night", "04:00"),
+                            ("tipee 13:00-18:00 day\ntipee 05:00-12:30 morning", "12:00"),
+                            ("tipee 09:00-18:00 day\ntipee 01:00-02:00 night\ntipee 08:00-10:00 next morning", "09:00")):
+            with self.subTest(body=body):
+                with self.assertRaisesRegex(EntriesCollectionValidationError, f"and {bound}"):
+                    self.parse(body)
+
+    def test_the_lines_after_the_one_starting_the_night_keep_their_order(self):
+        with self.assertRaisesRegex(EntriesCollectionValidationError, "between 01:00 and"):
+            self.parse("tipee 09:00-18:00 day\ntipee 01:00-02:00 night\ntipee 00:30-00:45 earlier")
+
+    def test_a_night_started_by_a_line_goes_past_midnight_only_once(self):
+        with self.assertRaisesRegex(EntriesCollectionValidationError, "only once"):
+            self.parse("tipee 09:00-18:00 day\ntipee 01:00-02:00 night\ntipee 05:00-04:00 again")
+
     def test_entries_within_a_day_are_unchanged(self):
         body = "tipee 08:00-09:00 a\ntipee -10:30 b\ntipee 13:00-14:00 c"
         self.assertEqual(self.hours(body), [1.0, 1.5, 1.0])
