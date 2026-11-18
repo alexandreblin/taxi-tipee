@@ -73,6 +73,11 @@ class TipeeBackend(BaseBackend):
             raise ValueError(f"[{self.name}] `remark` is either `none` or `description`, not `{remark}`.")
         self.send_description = remark == 'description'
 
+        merge = options.get('merge', 'true')
+        if merge not in ('true', 'false'):
+            raise ValueError(f"[{self.name}] `merge` is either `true` or `false`, not `{merge}`.")
+        self.merge = merge == 'true'
+
         self.resource_id = None
         self.entries = defaultdict(list)
 
@@ -98,14 +103,11 @@ class TipeeBackend(BaseBackend):
 
         failed_entries = {}
 
-        # Oldest first, so that what tipee reports reads in order. Taxi hands
-        # the entries over in file order, where the newest day usually comes
-        # first.
-        for date, entries in sorted(self.entries.items()):
-            for entry in sorted(entries, key=lambda entry: self._start(date, entry)):
-                try:
-                    self._push_entry(date, entry)
-                except PushEntryFailed as e:
+        for start, end, entries in self._timechecks():
+            try:
+                self._propose(start, end, entries)
+            except PushEntryFailed as e:
+                for entry in entries:
                     failed_entries[entry] = str(e)
 
         if failed_entries:
@@ -139,10 +141,31 @@ class TipeeBackend(BaseBackend):
 
         return user['user_id']
 
-    def _push_entry(self, date, entry):
-        start = self._start(date, entry)
-        end = start + datetime.timedelta(seconds=round(entry.hours * 3600))
+    def _timechecks(self):
+        """
+        The timechecks to propose, as (start, end, entries): one per entry,
+        or, with `merge`, one per run of back-to-back entries.
 
+        Oldest first, so that what tipee reports reads in order. Taxi hands
+        the entries over in file order, where the newest day usually comes
+        first.
+        """
+        timechecks = []
+
+        for date, entries in sorted(self.entries.items()):
+            for entry in sorted(entries, key=lambda entry: self._start(date, entry)):
+                start = self._start(date, entry)
+                end = start + datetime.timedelta(seconds=round(entry.hours * 3600))
+
+                if self.merge and timechecks and timechecks[-1][1] == start:
+                    timechecks[-1][1] = end
+                    timechecks[-1][2].append(entry)
+                else:
+                    timechecks.append([start, end, [entry]])
+
+        return timechecks
+
+    def _propose(self, start, end, entries):
         # tipee refuses it too, in less helpful words.
         if end > now():
             raise PushEntryFailed(f"[{self.name}] ends in the future: tipee only takes an entry once it is over.")
@@ -153,9 +176,12 @@ class TipeeBackend(BaseBackend):
             'out': end.strftime('%Y-%m-%dT%H:%M:%S'),
         }
 
-        description = (entry.description or '').strip()
-        if self.send_description and description:
-            proposal['remark'] = description[:REMARK_MAX_LENGTH]
+        # The descriptions of merged entries, each once, in order.
+        descriptions = list(dict.fromkeys(
+            description for description in ((entry.description or '').strip() for entry in entries) if description
+        ))
+        if self.send_description and descriptions:
+            proposal['remark'] = ' / '.join(descriptions)[:REMARK_MAX_LENGTH]
 
         self._call('timeclock/timechecks.propose', proposal)
 

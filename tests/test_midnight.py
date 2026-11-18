@@ -52,8 +52,7 @@ class EntriesPastMidnightTest(unittest.TestCase):
     def test_an_entry_past_midnight_can_continue_the_previous_one(self):
         body = "tipee 20:00-22:15 evening\ntipee -01:15 late"
         self.assertEqual(self.hours(body), [2.25, 3.0])
-        self.assertEqual(self.push(body), [('2026-11-14T20:00:00', '2026-11-14T22:15:00'),
-                                           ('2026-11-14T22:15:00', '2026-11-15T01:15:00')])
+        self.assertEqual(self.push(body), [('2026-11-14T20:00:00', '2026-11-15T01:15:00')])
 
     def test_the_end_stays_written_as_24_00(self):
         entries = self.parse("tipee 22:15-24:00 late")
@@ -63,15 +62,12 @@ class EntriesPastMidnightTest(unittest.TestCase):
     def test_the_day_goes_on_past_midnight(self):
         body = "tipee 20:00-22:15 evening\ntipee -00:15 late\ntipee 00:30-01:00 later\ntipee -01:30 last"
         self.assertEqual(self.hours(body), [2.25, 2.0, 0.5, 0.5])
-        self.assertEqual(self.push(body), [('2026-11-14T20:00:00', '2026-11-14T22:15:00'),
-                                           ('2026-11-14T22:15:00', '2026-11-15T00:15:00'),
-                                           ('2026-11-15T00:30:00', '2026-11-15T01:00:00'),
-                                           ('2026-11-15T01:00:00', '2026-11-15T01:30:00')])
+        self.assertEqual(self.push(body), [('2026-11-14T20:00:00', '2026-11-15T00:15:00'),
+                                           ('2026-11-15T00:30:00', '2026-11-15T01:30:00')])
 
-    def test_an_entry_after_midnight_follows_the_one_ending_at_midnight(self):
+    def test_entries_after_midnight_merge_with_the_one_ending_at_midnight(self):
         body = "tipee 22:15-24:00 late\ntipee 00:00-01:00 later"
-        self.assertEqual(self.push(body), [('2026-11-14T22:15:00', '2026-11-15T00:00:00'),
-                                           ('2026-11-15T00:00:00', '2026-11-15T01:00:00')])
+        self.assertEqual(self.push(body), [('2026-11-14T22:15:00', '2026-11-15T01:00:00')])
 
     def test_entries_after_midnight_are_pushed_in_order(self):
         # The day's entries are sorted before pushing: by time of day alone,
@@ -117,8 +113,7 @@ class EntriesPastMidnightTest(unittest.TestCase):
     def test_entries_within_a_day_are_unchanged(self):
         body = "tipee 08:00-09:00 a\ntipee -10:30 b\ntipee 13:00-14:00 c"
         self.assertEqual(self.hours(body), [1.0, 1.5, 1.0])
-        self.assertEqual(self.push(body), [("2026-11-14T08:00:00", "2026-11-14T09:00:00"),
-                                           ("2026-11-14T09:00:00", "2026-11-14T10:30:00"),
+        self.assertEqual(self.push(body), [("2026-11-14T08:00:00", "2026-11-14T10:30:00"),
                                            ("2026-11-14T13:00:00", "2026-11-14T14:00:00")])
 
 

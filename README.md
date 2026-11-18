@@ -51,8 +51,12 @@ regroup_entries = false
 
 Options, as query string arguments:
 
-* `remark=description` sends each entry's description as the proposal's remark (cut at 255 characters),
-  so that it shows in tipee. Off by default: tipee gets the times and nothing else.
+* `merge=false` proposes each entry on its own. By default, entries that follow each other without a
+  gap (`08:00-09:00` then `-10:30`) are proposed as one timecheck (`08:00-10:30`): tipee shows your
+  presence, and the detail stays in your timesheet.
+* `remark=description` sends the entry's description as the proposal's remark (cut at 255 characters),
+  so that it shows in tipee; merged entries get their descriptions joined with ` / `. Off by default:
+  tipee gets the times and nothing else.
 * `scheme=http` can be useful when developing (using `localhost:port` as the hostname).
 
 The backend finds out who you are from the token, so the `?person=` of earlier versions is gone. Your
@@ -79,8 +83,9 @@ Things you should know
 
 ### Entries become proposals
 
-Each entry is pushed as its own timecheck proposal, which you can still edit or delete in tipee as long
-as it is not validated. Depending on your rights, someone may have to validate it.
+Entries are pushed as timecheck proposals (back-to-back ones merged into one, unless `merge=false`),
+which you can still edit or delete in tipee as long as they are not validated. Depending on your rights,
+someone may have to validate them.
 
 tipee refuses a proposal that overlaps an existing timecheck, so pushing the same hours twice fails
 rather than counting them twice. It also refuses one that ends in the future: push an entry once it is

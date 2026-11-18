@@ -37,14 +37,30 @@ class PushTest(unittest.TestCase):
 
         return tipee, failures
 
-    def test_each_entry_is_proposed_for_the_tokens_owner(self):
-        tipee, failures = self.push("tipee 08:00-09:00 a\ntipee -10:30 b")
+    def test_back_to_back_entries_are_proposed_as_one_for_the_tokens_owner(self):
+        tipee, failures = self.push("tipee 08:00-09:00 a\ntipee -10:30 b\ntipee 13:00-14:00 c")
+
+        self.assertEqual(failures, {})
+        self.assertEqual(tipee.proposals, [
+            {'resource_id': USER_ID, 'in': '2026-11-14T08:00:00', 'out': '2026-11-14T10:30:00'},
+            {'resource_id': USER_ID, 'in': '2026-11-14T13:00:00', 'out': '2026-11-14T14:00:00'},
+        ])
+
+    def test_each_entry_is_proposed_on_its_own_when_asked(self):
+        tipee, failures = self.push("tipee 08:00-09:00 a\ntipee -10:30 b", backend=make_backend({'merge': 'false'}))
 
         self.assertEqual(failures, {})
         self.assertEqual(tipee.proposals, [
             {'resource_id': USER_ID, 'in': '2026-11-14T08:00:00', 'out': '2026-11-14T09:00:00'},
             {'resource_id': USER_ID, 'in': '2026-11-14T09:00:00', 'out': '2026-11-14T10:30:00'},
         ])
+
+    def test_a_failed_merged_proposal_fails_each_of_its_entries(self):
+        tipee = FakeTipee(propose=[response(409, {'message': 'Un timbrage ne peut pas en chevaucher un autre.'})])
+        _, failures = self.push("tipee 08:00-09:00 a\ntipee -10:30 b", tipee=tipee)
+
+        self.assertEqual(failures, {'a': '[tipee] Un timbrage ne peut pas en chevaucher un autre.',
+                                    'b': '[tipee] Un timbrage ne peut pas en chevaucher un autre.'})
 
     def test_requests_carry_the_token_and_the_api_version(self):
         tipee, _ = self.push("tipee 08:00-09:00 a")
@@ -74,10 +90,15 @@ class PushTest(unittest.TestCase):
         tipee, _ = self.push("tipee 08:00-09:00 Fixing bug")
         self.assertNotIn('remark', tipee.proposals[0])
 
-        tipee, _ = self.push("tipee 08:00-09:00 Fixing bug\ntipee -10:00 " + "x" * 300,
+        tipee, _ = self.push("tipee 08:00-09:00 Fixing bug\ntipee 11:00-12:00 " + "x" * 300,
                              backend=make_backend({'remark': 'description'}))
         self.assertEqual(tipee.proposals[0]['remark'], 'Fixing bug')
         self.assertEqual(tipee.proposals[1]['remark'], 'x' * 255)
+
+    def test_merged_entries_join_their_descriptions(self):
+        tipee, _ = self.push("tipee 08:00-09:00 Review\ntipee -10:00 Fixing bug\ntipee -11:00 Review",
+                             backend=make_backend({'remark': 'description'}))
+        self.assertEqual(tipee.proposals[0]['remark'], 'Review / Fixing bug')
 
     def test_failures_are_reported_against_their_entry(self):
         tipee = FakeTipee(propose=[
@@ -89,7 +110,7 @@ class PushTest(unittest.TestCase):
             response(201, {'id': '4'}),
         ])
         _, failures = self.push("tipee 08:00-09:00 ok\ntipee -10:00 overlap\ntipee -11:00 invalid\ntipee -12:00 fine",
-                                tipee=tipee)
+                                tipee=tipee, backend=make_backend({'merge': 'false'}))
 
         self.assertEqual(failures, {
             'overlap': '[tipee] Un timbrage ne peut pas en chevaucher un autre.',
@@ -98,7 +119,7 @@ class PushTest(unittest.TestCase):
 
     def test_an_entry_ending_in_the_future_is_not_sent(self):
         with mock.patch('taxi_tipee.backend.now', return_value=datetime.datetime(2026, 11, 14, 9, 30)):
-            tipee, failures = self.push("tipee 08:00-09:00 done\ntipee -10:00 not yet")
+            tipee, failures = self.push("tipee 08:00-09:00 done\ntipee 09:15-10:00 not yet")
 
         self.assertEqual(len(tipee.proposals), 1)
         self.assertEqual(failures, {'not yet': '[tipee] ends in the future: tipee only takes an entry once it is over.'})
@@ -178,6 +199,10 @@ class ConfigurationTest(unittest.TestCase):
     def test_remark_takes_known_values_only(self):
         with self.assertRaisesRegex(ValueError, '`remark`'):
             make_backend({'remark': 'yes'})
+
+    def test_merge_takes_known_values_only(self):
+        with self.assertRaisesRegex(ValueError, '`merge`'):
+            make_backend({'merge': 'no'})
 
 
 if __name__ == '__main__':
