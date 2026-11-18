@@ -131,6 +131,19 @@ rules catch mistakes:
 * the entries after it must lie between its end and noon, so that an evening entry written below it by
   mistake is refused rather than pushed a day late.
 
+The night can also go on after a pause, with no entry crossing midnight: a line that starts before
+06:00 and before the line above it ends starts the night. It and the lines after it are pushed on the
+next day, and must end by noon and before the day's first entry starts.
+
+```
+14/11/2026 # Saturday
+tipee    09:30-17:35    Release
+tipee    01:10-01:40    Hotfix
+```
+
+A line written out of order during the day (`21:00-22:00`, then `20:00-20:30` below it) starts after
+06:00, and stays on its day.
+
 This works by adjusting how Taxi reads timesheets, which is written for Taxi 6: on another major version,
 Taxi keeps refusing these entries.
 
