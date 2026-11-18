@@ -17,7 +17,7 @@ def make_backend(url_options=None, token='tipee-0123abcd-0123abcd-0123abcd-0123a
         hostname='tipee.example',
         port=None,
         path='/api/',
-        options=url_options or {},
+        options={'person': USER_ID, **(url_options or {})},
         context={'settings': {'regroup_entries': False}},
     )
 
@@ -34,21 +34,13 @@ def response(status, body=None, headers=None):
 
 
 class FakeTipee:
-    def __init__(self, user=None, propose=None):
-        self.user = user or {
-            'user_id': USER_ID,
-            'perm_timecheck_suggest': True,
-            'perm_timecheck_validateown': False,
-        }
+    def __init__(self, propose=None):
         # Answers to `timechecks.propose`, in order; then 201s.
         self.propose_answers = list(propose or [])
         self.calls = []
 
     def post(self, url, json=None, headers=None, timeout=None):
         self.calls.append((url, json, headers))
-
-        if url.endswith('/instance/metadata.show'):
-            return response(200, {'user': self.user})
 
         if url.endswith('/timeclock/timechecks.propose'):
             if self.propose_answers:
